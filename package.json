@@ -3,16 +3,22 @@
   "version": "0.0.1",
   "description": "A NuGet client for Node",
   "main": "lib/nuget-client.js",
+  "bin": {
+    "nuget": "dist/nuget-client-cli.js"
+  },
   "scripts": {
     "test": "jest",
     "increment-package-version": "cross-env VERSION_INCREMENT_STRATEGY=minor run-s \"zarro increment-package-json-version\"",
     "increment-package-version-beta": "cross-env VERSION_INCREMENT_STRATEGY=patch run-s \"zarro increment-package-json-version\"",
-    "release-beta": "run-s test tsc increment-package-version-beta push-beta",
-    "release": "run-s test tsc increment-package-version push",
+    "prerelease-beta": "run-s test",
+    "release-beta": "run-s test build increment-package-version-beta push-beta",
+    "prerelease": "run-s test",
+    "release": "run-s test build increment-package-version push",
     "push": "npm publish",
     "push-beta": "npm publish --tag beta",
     "lint": "tslint",
-    "tsc": "tsc",
+    "prebuild": "rimraf dist",
+    "build": "tsc",
     "zarro": "zarro"
   },
   "repository": {
@@ -39,8 +45,9 @@
     "npm-run-all": "^4.1.5",
     "ts-jest": "^26.1.0",
     "ts-node": "^8.10.2",
+    "tslint": "^6.1.2",
     "typescript": "^3.8.3",
-    "zarro": "^1.29.1"
+    "zarro": "^1.50.0"
   },
   "dependencies": {
     "bent": "^7.3.0",
