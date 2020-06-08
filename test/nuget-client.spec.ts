@@ -1,25 +1,9 @@
-import "expect-more-jest";
+import "expect-even-more-jest";
 import { NugetClient } from "../src/nuget-client";
-const bent = require("bent");
+import { Sandbox } from "filesystem-sandbox";
+import * as path from "path";
 
 describe(`nuget-api`, () => {
-    it.skip(`discovery`, async () => {
-        // Arrange
-        const getJson = bent("json");
-        // Act
-        // example dl url: https://api.nuget.org/v3-flatcontainer/peanutbutter.tempdb.runner/1.2.360/peanutbutter.tempdb.runner.1.2.360.nupkg
-        // this gets a package's info by id
-        const moo = (await getJson("https://azuresearch-usnc.nuget.org/query?q=packageId:PeanutButter.TempDb.Runner")) as any;
-        // in the results, there's gonna be an url like
-        // https://api.nuget.org/v3/registration5-semver1/peanutbutter.tempdb.runner/1.2.360.json
-        // -> this returns json with the packageContent
-        // Assert
-        console.log({
-            foo: moo.resources[0]
-        });
-
-    });
-
     describe(`fetchResources`, () => {
         it(`should fetch the resources`, async () => {
             // Arrange
@@ -45,10 +29,10 @@ describe(`nuget-api`, () => {
                 // Arrange
                 const sut = create();
                 // Act
-                const info = await sut.findPackage(
-                    "PeanutButter.Utils",
-                    "1.0.117"
-                );
+                const info = await sut.findPackage({
+                    packageId: "PeanutButter.Utils",
+                    version: "1.0.117"
+                });
 
                 // Assert
                 expect(info)
@@ -85,6 +69,48 @@ describe(`nuget-api`, () => {
                     .toBeDefined();
 
             });
+        });
+    });
+
+    describe(`downloadPackage`, () => {
+        it(`should download the package to the specified folder with standard nuget structure (1)`, async () => {
+            jest.setTimeout(60000);
+            // Arrange
+            const
+                sandbox = await Sandbox.create(),
+                version = "1.2.316",
+                packageId = "PeanutButter.Utils",
+                expectedFolder = path.join(sandbox.path, `${packageId}.${version}`),
+                sut = create();
+            // Act
+            await sut.downloadPackage({
+                packageId: "PeanutButter.Utils",
+                version: "1.2.316",
+                output: sandbox.path
+            })
+            // Assert
+            expect(expectedFolder)
+                .toBeFolder();
+        });
+
+        it(`should download the package to the specified folder with standard nuget structure (2)`, async () => {
+            jest.setTimeout(60000);
+            // Arrange
+            const
+                sandbox = await Sandbox.create(),
+                version = "1.2.317",
+                packageId = "PeanutButter.Utils",
+                fullName = `${packageId}.${version}`,
+                expectedFolder = path.join(sandbox.path, `${packageId}.${version}`),
+                sut = create();
+            // Act
+            await sut.downloadPackage({
+                packageId: fullName,
+                output: sandbox.path
+            })
+            // Assert
+            expect(expectedFolder)
+                .toBeFolder();
         });
     });
 

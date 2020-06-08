@@ -1,6 +1,12 @@
+import { Duplex, Readable } from "stream";
+import { fs } from "./fs";
+import * as path from "path";
+import bent from "bent";
+import * as unzipper from "unzipper";
+
 const
-    bent = require("bent"),
     httpGet = bent("json"),
+    httpGetBuffer = bent("buffer"),
     defaultRegistryUrl = "https://api.nuget.org/v3/index.json";
 
 export interface NugetResource {
@@ -107,8 +113,7 @@ interface ResourceCacheItem {
     secondarySearchUrl: string | null;
 }
 
-const cache: ResourceCache = {
-};
+const cache: ResourceCache = {};
 
 async function cacheApiResourcesFor(registryUrl: string): Promise<ResourceCacheItem> {
     if (cache[registryUrl]) {
@@ -132,24 +137,43 @@ async function fetchResources(registryUrl: string): Promise<NugetResources> {
     );
 }
 
+export type LogFunction = (message: string) => void;
 
 export class NugetClient {
     private readonly registryUrl: string;
+    private readonly _loggers: LogFunction[] = [];
 
     constructor(registryUrl?: string) {
         this.registryUrl = registryUrl || defaultRegistryUrl;
     }
 
+    public addLogger(fn: LogFunction): void {
+        this._loggers.push(fn);
+    }
+
+    private log(message: string): void {
+        this._loggers.forEach(l => {
+            try {
+                l(message);
+            } catch (e) {
+                console.error("logger error", e);
+            }
+        })
+    }
+
     public async fetchPackageInfo(packageId: string) {
-        return await this.query(`packageId:${packageId}`);
+        this.log(`fetching package info for: ${ packageId }`);
+        return await this.query(`packageId:${ packageId }`);
     }
 
     public async fetchResources(): Promise<NugetResources> {
+        this.log(`fetching resources for registry: ${ this.registryUrl }`);
         return await fetchResources(this.registryUrl);
     }
 
     public async query(query: string): Promise<QueryResponse> {
         const cache = await cacheApiResourcesFor(this.registryUrl);
+        this.log(`querying: ${ query }`);
         return mapAtFields(
             await httpGet(
                 `${ cache.primarySearchUrl }?q=${ encodeURIComponent(query) }`
@@ -157,13 +181,89 @@ export class NugetClient {
         ) as QueryResponse
     }
 
-    public async findPackage(
-        packageId: string,
-        version?: string): Promise<PackageInfo | undefined> {
+    public async downloadPackage(
+        options: DownloadOptions
+    ) {
         const
+            info = await this.findPackage(options);
+        if (!info) {
+            return;
+        }
+        const
+            { indexUrl } = info,
+            index = mapAtFields(
+                await httpGet(indexUrl)
+            ) as PackageIndex,
+            { packageContent } = index,
+            fullName = `${ info.id }.${ info.version }`,
+            outDir = path.join(options.output, fullName);
+        if (await fs.folderExists(outDir)) {
+            // ensure a clean download
+            await fs.rimraf(outDir);
+        }
+        await fs.mkdir(outDir);
+        this.log(`download: ${ fullName }`)
+        const
+            packageBuffer = await httpGetBuffer(packageContent),
+            stream = new Duplex();
+        return new Promise((_resolve, _reject) => {
+            let completed = false;
+            const resolve = () => {
+                if (!completed) {
+                    completed = true;
+                    _resolve();
+                }
+            };
+            const reject = (e: Error) => {
+                if (!completed) {
+                    completed = true;
+                    _reject(e);
+                }
+            };
+            stream.pipe(unzipper.Extract({ path: outDir }))
+                .on("end", resolve)
+                .on("close", resolve)
+                .on("error", reject);
+            stream.push(packageBuffer);
+            stream.push(null);
+        });
+    }
+
+    private resolvePackageIdentifier(identifier: PackageIdentifier): PackageIdentifier {
+        if (identifier.packageId && identifier.version) {
+            return { ...identifier };
+        }
+        const parts = (identifier.packageId || "").split(".");
+        if (parts.length < 4) {
+            return { ...identifier };
+        }
+        const lastThree = parts.slice(parts.length - 3);
+        const areAllNumeric = lastThree.reduce(
+            (acc, cur) => acc && !isNaN(parseInt(cur)), true
+        );
+        return areAllNumeric
+            ? {
+                packageId: parts.slice(0, parts.length - 3).join("."),
+                version: lastThree.join(".")
+            }
+            : { ...identifier }
+    }
+
+    public async findPackage(
+        identifier: PackageIdentifier
+    ): Promise<PackageInfo | undefined> {
+        const resolved = this.resolvePackageIdentifier(identifier);
+        let id = resolved.packageId;
+        if (resolved.version) {
+            id = `${ id }.${ resolved.version }`
+        }
+        this.log(`attempting to fetch package info for ${ id }`);
+        const
+            { packageId, version } = resolved,
             packageInfo = await this.fetchPackageInfo(packageId),
             data = packageInfo.data[0];
         if (!data) {
+            this.log(`no package info found for ${ id }`);
             return undefined;
         }
         const versionData = !!version
@@ -189,5 +289,41 @@ export class NugetClient {
             verified: data.verified,
             indexUrl: versionData._id
         };
+    }
+
+}
+
+export interface PackageIdentifier {
+    packageId: string;
+    version?: string;
+}
+
+export interface DownloadOptions extends PackageIdentifier {
+    output: string;
+}
+
+interface PackageIndex {
+    id: string;
+    type: string[];
+    catalogEntry: string;
+    listed: boolean;
+    packageContent: string;
+    published: string;
+    registration: string;
+    context: {
+        vocab: string;
+        xsd: string;
+        catalogEntry: {
+            type: string;
+        }
+        registration: {
+            type: string;
+        }
+        packageContent: {
+            type: string;
+        }
+        published: {
+            type: string;
+        }
     }
 }
