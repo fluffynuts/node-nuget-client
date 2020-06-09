@@ -1,6 +1,6 @@
 {
   "name": "node-nuget-client",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "An incomplete NuGet client for Node",
   "main": "lib/nuget-client.js",
   "bin": {
@@ -10,9 +10,7 @@
     "test": "jest",
     "increment-package-version": "cross-env VERSION_INCREMENT_STRATEGY=minor run-s \"zarro increment-package-json-version\"",
     "increment-package-version-beta": "cross-env VERSION_INCREMENT_STRATEGY=patch run-s \"zarro increment-package-json-version\"",
-    "prerelease-beta": "run-s test",
     "release-beta": "run-s test build increment-package-version-beta push-beta",
-    "prerelease": "run-s test",
     "release": "run-s test build increment-package-version push",
     "push": "npm publish",
     "push-beta": "npm publish --tag beta",
