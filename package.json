@@ -1,6 +1,6 @@
 {
   "name": "node-nuget-client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "An incomplete NuGet client for Node",
   "main": "lib/nuget-client.js",
   "bin": {
@@ -8,15 +8,11 @@
   },
   "scripts": {
     "test": "jest",
-    "increment-package-version": "cross-env VERSION_INCREMENT_STRATEGY=minor run-s \"zarro increment-package-json-version\"",
-    "increment-package-version-beta": "cross-env VERSION_INCREMENT_STRATEGY=patch run-s \"zarro increment-package-json-version\"",
-    "release-beta": "run-s test build increment-package-version-beta push-beta",
-    "release": "run-s test build increment-package-version push",
-    "push": "npm publish",
-    "push-beta": "npm publish --tag beta",
-    "lint": "tslint",
     "prebuild": "rimraf dist",
     "build": "tsc",
+    "lint": "tslint -p .",
+    "release-beta": "cross-env BETA=1 VERSION_INCREMENT_STRATEGY=patch run-s \"zarro release-npm\"",
+    "release": "cross-env VERSION_INCREMENT_STRATEGY=minor run-s \"zarro release-npm\"",
     "zarro": "zarro",
     "cli": "ts-node src/nuget-client-cli.ts"
   },
