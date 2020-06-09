@@ -99,7 +99,17 @@ const _ = yargs.command(
             default: process.cwd()
         })
     }, async (args: InstallOptions) => {
-        await run(async (client) => await client.downloadPackage(args));
+        await run(async (client) => {
+            const result = await client.downloadPackage(args);
+            if (!result) {
+                const fullName = args.version
+                    ? `${args.packageId}.${args.version}`
+                    : args.packageId;
+                console.log(`package not found: ${fullName}`);
+            } else {
+                console.log(`${result.fullName} downloaded to ${result.fullPath}`);
+            }
+        });
     }).command(
     "search <word> [words...]",
     "Searches for packages by any words",

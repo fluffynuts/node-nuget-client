@@ -100,7 +100,7 @@ describe(`nuget-api`, () => {
                 .toBeFolder();
             expect(path.join(expectedFolder, "PeanutButter.Utils.nuspec"))
                 .toBeFile();
-            
+
             expect(result.fullName)
                 .toEqual("PeanutButter.Utils.1.2.316");
             expect(result.id)

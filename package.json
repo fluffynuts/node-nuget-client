@@ -1,6 +1,6 @@
 {
   "name": "node-nuget-client",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "An incomplete NuGet client for Node",
   "main": "lib/nuget-client.js",
   "bin": {
@@ -11,7 +11,9 @@
     "prebuild": "rimraf dist",
     "build": "tsc",
     "lint": "tslint -p .",
+    "prerelease-beta": "run-s build",
     "release-beta": "cross-env BETA=1 VERSION_INCREMENT_STRATEGY=patch run-s \"zarro release-npm\"",
+    "prerelease": "run-s build",
     "release": "cross-env VERSION_INCREMENT_STRATEGY=minor run-s \"zarro release-npm\"",
     "zarro": "zarro",
     "cli": "ts-node src/nuget-client-cli.ts"
