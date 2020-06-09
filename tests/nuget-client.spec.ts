@@ -83,14 +83,32 @@ describe(`nuget-api`, () => {
                 expectedFolder = path.join(sandbox.path, `${packageId}.${version}`),
                 sut = create();
             // Act
-            await sut.downloadPackage({
-                packageId: "PeanutButter.Utils",
-                version: "1.2.316",
+            const result = await sut.downloadPackage({
+                packageId,
+                version,
                 output: sandbox.path
             })
             // Assert
+            if (!result) {
+                throw new Error("no result");
+            }
             expect(expectedFolder)
                 .toBeFolder();
+            expect(path.join(expectedFolder, "lib"))
+                .toBeFolder();
+            expect(path.join(expectedFolder, "package"))
+                .toBeFolder();
+            expect(path.join(expectedFolder, "PeanutButter.Utils.nuspec"))
+                .toBeFile();
+            
+            expect(result.fullName)
+                .toEqual("PeanutButter.Utils.1.2.316");
+            expect(result.id)
+                .toEqual(packageId);
+            expect(result.version)
+                .toEqual(version);
+            expect(result.fullPath)
+                .toEqual(expectedFolder);
         });
 
         it(`should download the package to the specified folder with standard nuget structure (2)`, async () => {

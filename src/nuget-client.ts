@@ -23,6 +23,11 @@ export interface NugetResource {
     comment: string;
 }
 
+export interface DownloadResult extends PackageInfo {
+    fullName: string;
+    fullPath: string;
+}
+
 export interface NugetResources {
     version: string;
     resources: NugetResource[];
@@ -138,7 +143,7 @@ export class NugetClient {
 
     public async downloadPackage(
         options: DownloadOptions
-    ): Promise<void> {
+    ): Promise<DownloadResult | undefined> {
         const
             info = await this.findPackage(options);
         if (!info) {
@@ -161,12 +166,16 @@ export class NugetClient {
         const
             packageBuffer = await httpGetBuffer(packageContent),
             stream = new Duplex();
-        return new Promise((_resolve, _reject) => {
+        return new Promise<DownloadResult>((_resolve, _reject) => {
             let completed = false;
             const resolve = () => {
                 if (!completed) {
                     completed = true;
-                    _resolve();
+                    _resolve({
+                        ...info,
+                        fullName,
+                        fullPath: outDir
+                    });
                 }
             };
             const reject = (e: Error) => {
