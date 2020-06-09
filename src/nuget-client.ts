@@ -112,9 +112,14 @@ export class NugetClient {
         })
     }
 
-    public async fetchPackageInfo(packageId: string) {
+    public fetchPackageInfo(packageId: string) {
         this.log(`fetching package info for: ${ packageId }`);
-        return await this.query(`packageId:${ packageId }`);
+        return this.query(`packageId:${ packageId }`);
+    }
+
+    public search(query: string) {
+        this.log(`searching for: ${query}`);
+        return this.query(query);
     }
 
     public async fetchResources(): Promise<NugetResources> {
@@ -125,16 +130,15 @@ export class NugetClient {
     public async query(query: string): Promise<QueryResponse> {
         const cache = await cacheApiResourcesFor(this.registryUrl);
         this.log(`querying: ${ query }`);
+        const queryUrl = `${ cache.primarySearchUrl }?q=${ encodeURIComponent(query) }`;
         return mapAtFields(
-            await httpGet(
-                `${ cache.primarySearchUrl }?q=${ encodeURIComponent(query) }`
-            )
+            await httpGet(queryUrl)
         ) as QueryResponse
     }
 
     public async downloadPackage(
         options: DownloadOptions
-    ) {
+    ): Promise<void> {
         const
             info = await this.findPackage(options);
         if (!info) {

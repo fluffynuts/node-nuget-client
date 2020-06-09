@@ -1,10 +1,10 @@
 {
   "name": "node-nuget-client",
-  "version": "0.0.2",
-  "description": "A NuGet client for Node",
+  "version": "0.0.4",
+  "description": "An incomplete NuGet client for Node",
   "main": "lib/nuget-client.js",
   "bin": {
-    "nuget": "dist/nuget-client-cli.js"
+    "node-nuget": "dist/nuget-client-cli.js"
   },
   "scripts": {
     "test": "jest",
@@ -19,7 +19,8 @@
     "lint": "tslint",
     "prebuild": "rimraf dist",
     "build": "tsc",
-    "zarro": "zarro"
+    "zarro": "zarro",
+    "cli": "ts-node src/nuget-client-cli.ts"
   },
   "repository": {
     "type": "git",
@@ -38,7 +39,6 @@
     "@types/node": "^13.13.4",
     "@types/rimraf": "^3.0.0",
     "@types/unzipper": "^0.10.3",
-    "cross-env": "^7.0.2",
     "expect-even-more-jest": "^1.3.0",
     "filesystem-sandbox": "^1.11.0",
     "jest": "^26.0.1",
@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "bent": "^7.3.0",
+    "chalk": "^4.1.0",
     "rimraf": "^3.0.2",
     "unzipper": "^0.10.11",
     "yargs": "^15.3.1"

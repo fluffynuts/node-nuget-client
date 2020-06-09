@@ -111,6 +111,12 @@ describe(`nuget-api`, () => {
             // Assert
             expect(expectedFolder)
                 .toBeFolder();
+            expect(path.join(expectedFolder, "lib"))
+                .toBeFolder();
+            expect(path.join(expectedFolder, "package"))
+                .toBeFolder();
+            expect(path.join(expectedFolder, "PeanutButter.Utils.nuspec"))
+                .toBeFile();
         });
     });
 

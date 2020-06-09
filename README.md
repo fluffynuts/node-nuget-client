@@ -13,10 +13,11 @@ Like so many npm package names, the most obvious / best one
 
 ## It's not complete tho?
 
-Not yet. Currently you can query a package, or query
-the nuget api if you understand the syntax. Eventually,
-this will be able to download and unpack nuget packages,
-and perhaps do more with them.
+Correct. Currently you can use the api or cli client to:
+- query package info (cli: `node-nuget info <packageId>`)
+- search for packages (cli: `node-nuget search [words...]`)
+- download a package (cli: `node-nuget download <packageId>`)
+
 
 ## WHY IT TAKES SO LONG?!
 
