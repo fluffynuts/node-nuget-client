@@ -149,6 +149,9 @@ export class NugetClient {
         if (!info) {
             return;
         }
+        if (!options.output) {
+            options.output = process.cwd()
+        }
         const
             { indexUrl } = info,
             index = mapAtFields(
