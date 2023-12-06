@@ -1,19 +1,17 @@
-import { Readable } from "stream";
+import * as os from "os";
 import * as path from "path";
 import bent from "bent";
 import * as unzipper from "unzipper";
 import {
-  PackageIndex,
   DownloadOptions,
   LogFunction,
   PackageIdentifier,
+  PackageIndex,
   PackageInfo,
   QueryResponse
 } from "./interfaces";
-import {
-  folderExists,
-  mkdir, rm, writeFile
-} from "yafs";
+import { folderExists, folderExistsSync, FsEntities, lsSync, mkdir, readTextFileSync, rm, writeFile } from "yafs";
+import { PackageSource, tryFindNugetConfig, tryReadNugetConfig } from "./try-find-nuget-config";
 
 const
   httpGet = bent("json"),
@@ -99,12 +97,36 @@ async function fetchResources(registryUrl: string): Promise<NugetResources> {
   );
 }
 
+function tryResolveUrlFor(registryUrl?: string): string | undefined {
+  if (!registryUrl) {
+    return undefined;
+  }
+  const nugetConfig = tryReadNugetConfig();
+  if (!nugetConfig) {
+    // unable to resolve, assume valid url
+    return registryUrl;
+  }
+  try {
+    const
+      sources = Array.from(nugetConfig.configuration.packageSources.add);
+    for (const source of sources) {
+      if (source.key.toLowerCase() === registryUrl.toLowerCase()) {
+        return source.value;
+      }
+    }
+  } catch (e) {
+    return undefined;
+  }
+}
+
+
 export class NugetClient {
   private readonly registryUrl: string;
   private readonly _loggers: LogFunction[] = [];
 
-  constructor(registryUrl?: string) {
-    this.registryUrl = registryUrl || defaultRegistryUrl;
+  constructor(registryUrlOrName?: string) {
+    registryUrlOrName = tryResolveUrlFor(registryUrlOrName);
+    this.registryUrl = registryUrlOrName || defaultRegistryUrl;
   }
 
   public addLogger(fn: LogFunction): void {

@@ -73,6 +73,51 @@ describe(`nuget-api`, () => {
           .toBeDefined();
 
       });
+
+      it(`should return info for that version (source specified)`, async () => {
+        // Arrange
+        const sut = create("nuget.org");
+        // Act
+        const info = await sut.findPackage({
+          packageId: "PeanutButter.Utils",
+          version: "1.0.117"
+        });
+
+        // Assert
+        expect(info)
+          .toBeDefined();
+        if (info === undefined) {
+          // please the ts compiler
+          return;
+        }
+        expect(info.version)
+          .toEqual("1.0.117");
+        expect(info.id)
+          .toEqual("PeanutButter.Utils");
+        expect(info.description)
+          .toBeDefined();
+        expect(info.summary)
+          .toBeDefined();
+        expect(info.title)
+          .toBeDefined();
+        expect(info.iconUrl)
+          .toBeDefined();
+        expect(info.licenseUrl)
+          .toBeDefined();
+        expect(info.tags)
+          .toBeArray();
+        expect(info.authors)
+          .toBeArray();
+        expect(info.totalDownloads)
+          .toBeGreaterThan(0);
+        expect(info.downloads)
+          .toBeGreaterThan(0);
+        expect(info.verified)
+          .toBeDefined();
+        expect(info.indexUrl)
+          .toBeDefined();
+
+      });
     });
   });
 
@@ -251,7 +296,7 @@ describe(`nuget-api`, () => {
     await Sandbox.destroyAll();
   });
 
-  function create() {
-    return new NugetClient();
+  function create(registry?: string) {
+    return new NugetClient(registry);
   }
 });
