@@ -13,10 +13,20 @@ Like so many npm package names, the most obvious / best one
 
 ## It's not complete tho?
 
-Correct. Currently you can use the api or cli client to:
-- query package info (cli: `node-nuget info <packageId>`)
-- search for packages (cli: `node-nuget search [words...]`)
-- download a package (cli: `node-nuget download <packageId>`)
+Correct. Currently you can use the api or cli client to do:
+
+### CLI
+- query package info (cli: `npx node-nuget-client info <packageId>`)
+- search for packages (cli: `npx node-nuget-client search [words...]`)
+- download a package (cli: `npx node-nuget-client download <packageId>`)
+
+### API
+
+```typescript
+import { NugetClient } from "./nuget-client";
+const client = new NugetClient();
+const info = await client.fetchPackageInfo("nunit.consolerunner")
+```
 
 
 ## WHY IT TAKES SO LONG?!
