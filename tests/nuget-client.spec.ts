@@ -5,7 +5,8 @@ import * as path from "path";
 import { exec } from "child_process";
 import { createReadStream } from "fs";
 import { createHash } from "crypto";
-import { FsEntities, ls, stat } from "yafs";
+import { fileExists, FsEntities, ls, stat, writeTextFile } from "yafs";
+import { tryFindNugetConfig } from "../src/try-find-nuget-config";
 
 describe(`nuget-api`, () => {
   describe(`fetchResources`, () => {
@@ -76,6 +77,7 @@ describe(`nuget-api`, () => {
 
       it(`should return info for that version (source specified)`, async () => {
         // Arrange
+        await createNugetConfigIfMissing();
         const sut = create("nuget.org");
         // Act
         const info = await sut.findPackage({
@@ -118,6 +120,37 @@ describe(`nuget-api`, () => {
           .toBeDefined();
 
       });
+
+      async function createNugetConfigIfMissing() {
+        const existing = tryFindNugetConfig();
+        if (!!existing) {
+          return;
+        }
+        const target = path.join(
+          `${ process.env.HOME }`,
+          ".config",
+          "NuGet",
+          "config",
+          "NuGet.config"
+        );
+        await writeTextFile(
+          target,
+          `
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+  </packageSources>
+  <packageSourceCredentials>
+    <nuget.org>
+      <add key="Username" value="dingdong" />
+      <add key="ClearTextPassword" value="not-gonna-work" />
+    </nuget.org>
+  </packageSourceCredentials>
+</configuration>
+          `.trim()
+        )
+      }
     });
   });
 
@@ -203,7 +236,7 @@ describe(`nuget-api`, () => {
 
       async function downloadWithNuget(): Promise<void> {
         await new Promise((resolve, reject) => {
-          exec(`nuget install nunit.consolerunner -outputdirectory "${verifySandbox.path}"`, err => {
+          exec(`nuget install nunit.consolerunner -outputdirectory "${ verifySandbox.path }"`, err => {
             return err
               ? reject(err)
               : resolve();
@@ -232,14 +265,15 @@ describe(`nuget-api`, () => {
           const fullPath = path.join(p, file);
           const st = await stat(fullPath);
           if (!st) {
-            throw new Error(`unable to stat file at: ${fullPath}`);
+            throw new Error(`unable to stat file at: ${ fullPath }`);
           }
           const info = {
             path: file,
             size: st.size
           } as FileInfo;
           result.push(info);
-          hashPromises.push(hashFile(fullPath).then(hash => info.hash = hash).then(() => {}));
+          hashPromises.push(hashFile(fullPath).then(hash => info.hash = hash).then(() => {
+          }));
         }
         await Promise.all(hashPromises);
         return result;
