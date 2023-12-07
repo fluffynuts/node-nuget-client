@@ -108,7 +108,9 @@ function tryResolveUrlFor(registryUrl?: string): string | undefined {
   }
   try {
     const
-      sources = Array.from(nugetConfig.configuration.packageSources.add);
+      sources = Array.isArray(nugetConfig.configuration.packageSources.add)
+        ? nugetConfig.configuration.packageSources.add
+        : [ nugetConfig.configuration.packageSources.add ];
     for (const source of sources) {
       if (source.key.toLowerCase() === registryUrl.toLowerCase()) {
         return source.value;

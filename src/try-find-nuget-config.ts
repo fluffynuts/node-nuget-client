@@ -1,8 +1,7 @@
 import os from "os";
 import { folderExistsSync, FsEntities, lsSync, readTextFileSync } from "yafs";
 import path from "path";
-import { toJson } from "xml2json";
-import { NugetClient } from "./nuget-client";
+import { parseXml } from "./xml-to-json";
 
 // NOTE: functions in here have to be synchronous as
 // they are ultimated called from a constructor :|
@@ -13,7 +12,7 @@ export interface NugetConfig {
 
 export interface NugetConfigConfiguration {
   packageSources: {
-    add: PackageSource[]
+    add: PackageSource | PackageSource[]
   }
   // TODO: do we need the rest? credentials? perhaps
   //        later, when there's a need to read from
@@ -92,19 +91,21 @@ function findFirstNugetConfig(search: string[]): string | undefined {
   }
 }
 
-export function tryReadNugetConfig(): NugetConfig | undefined {
-  const configPath = tryFindNugetConfig();
+export function tryReadNugetConfig(
+  at?: string
+): NugetConfig | undefined {
+  const configPath = at ?? tryFindNugetConfig();
   if (!configPath) {
     return undefined;
   }
   try {
     const
       contents = readTextFileSync(configPath),
-      { toJson } = require("xml2json"),
-      json = toJson(contents),
-      result = JSON.parse(json) as NugetConfig;
+      // convert = require("xmltojson"),
+      // { toJson } = require("xml2json"),
+      result = parseXml<NugetConfig>(contents);
     if (!result || !result.configuration || !result.configuration.packageSources || !result.configuration.packageSources) {
-      console.warn(`WARN: invalid configuration at '${configPath}':\n${JSON.stringify(result, null, 2)}`);
+      console.warn(`WARN: invalid configuration at '${ configPath }':\n${ JSON.stringify(result, null, 2) }`);
     }
     return result;
   } catch (e) {
