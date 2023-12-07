@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: *
   pull_request:
-    branches: [ master ]
+    branches: *
 
 jobs:
   linux:
@@ -39,7 +39,7 @@ jobs:
         npm i
         npm test
 
-  osx:
+  windows:
     runs-on: windows-latest
     steps:
     - name: Checkout
