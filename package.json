@@ -7,7 +7,8 @@
     "node-nuget": "dist/nuget-client-cli.js"
   },
   "scripts": {
-    "test": "jest",
+    "test": "run-s build jest",
+    "jest": "jest",
     "prebuild": "rimraf dist",
     "build": "tsc",
     "lint": "tslint -p .",
@@ -31,19 +32,18 @@
   "homepage": "https://github.com/fluffynuts/node-nuget-client#readme",
   "devDependencies": {
     "@types/bent": "^7.0.2",
-    "@types/jest": "^25.2.3",
+    "@types/jest": "^29.5.11",
     "@types/node": "^13.13.4",
     "@types/rimraf": "^3.0.0",
     "@types/unzipper": "^0.10.9",
     "@types/xmldom": "^0.1.34",
     "expect-even-more-jest": "^1.3.0",
     "filesystem-sandbox": "^1.24.0",
-    "jest": "^26.0.1",
     "npm-run-all": "^4.1.5",
-    "ts-jest": "^26.1.0",
+    "ts-jest": "^29.1.1",
     "ts-node": "^8.10.2",
     "tslint": "^6.1.2",
-    "typescript": "^3.8.3",
+    "typescript": "^5.3.3",
     "xmldom": "^0.6.0",
     "zarro": "^1.152.0"
   },

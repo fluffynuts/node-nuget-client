@@ -235,7 +235,7 @@ describe(`nuget-api`, () => {
       }
 
       async function downloadWithNuget(): Promise<void> {
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
           exec(`nuget install nunit.consolerunner -outputdirectory "${ verifySandbox.path }"`, err => {
             return err
               ? reject(err)

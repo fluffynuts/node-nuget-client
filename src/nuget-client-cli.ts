@@ -68,7 +68,7 @@ async function run(fn: AsyncAction<NugetClient>) {
   try {
     await fn(makeClient());
   } catch (e) {
-    die(e);
+    die(e as Error);
   }
 }
 

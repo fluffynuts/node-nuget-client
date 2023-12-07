@@ -231,7 +231,7 @@ export class NugetClient {
         }
         return resolve();
       } catch (e) {
-        return reject(e);
+        return reject(e as Error);
       }
     });
   }
