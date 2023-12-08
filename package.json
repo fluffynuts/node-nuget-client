@@ -1,6 +1,6 @@
 {
   "name": "node-nuget-client",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "An incomplete NuGet client for Node",
   "main": "dist/nuget-client.js",
   "bin": {
