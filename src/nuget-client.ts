@@ -1,7 +1,5 @@
-import * as os from "os";
 import * as path from "path";
 import bent from "bent";
-import * as unzipper from "unzipper";
 import {
   DownloadOptions,
   LogFunction,
@@ -10,8 +8,9 @@ import {
   PackageInfo,
   QueryResponse
 } from "./interfaces";
-import { folderExists, folderExistsSync, FsEntities, lsSync, mkdir, readTextFileSync, rm, writeFile } from "yafs";
-import { PackageSource, tryFindNugetConfig, tryReadNugetConfig } from "./try-find-nuget-config";
+import { folderExists, mkdir, rm, writeFile } from "yafs";
+import { tryReadNugetConfig } from "./try-find-nuget-config";
+import JSZip from "jszip";
 
 const
   httpGet = bent("json"),
@@ -222,12 +221,18 @@ export class NugetClient {
         }
       };
       try {
-        const zip = await unzipper.Open.buffer(packageBuffer as Buffer);
-        for (const file of zip.files) {
-          const
-            buffer = await file.buffer(),
-            target = path.join(outDir, file.path);
-          await writeFile(target, buffer);
+        const
+          zip = await JSZip.loadAsync(packageBuffer),
+          filePaths = Object.keys(zip.files).sort();
+        for (const filePath of filePaths) {
+          const data = await zip.file(filePath)?.async("nodebuffer");
+          if (!data) {
+            console.warn(`zip file claims to have entry '${filePath}' but the file was not found within the archive`);
+            // throw rather?
+            continue;
+          }
+          const target = path.join(outDir, filePath);
+          await writeFile(target, data);
         }
         return resolve();
       } catch (e) {
