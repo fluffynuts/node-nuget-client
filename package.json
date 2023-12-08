@@ -43,7 +43,7 @@
     "ts-node": "^8.10.2",
     "tslint": "^6.1.2",
     "typescript": "^5.3.3",
-    "zarro": "^1.152.0"
+    "zarro": "^1.157.0"
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.8.10",
