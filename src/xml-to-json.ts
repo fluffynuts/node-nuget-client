@@ -1,11 +1,10 @@
-import { DOMParser } from "xmldom";
+import { DOMParser } from "@xmldom/xmldom";
 
 export function parseXml<T extends object>(xml: string): T | undefined {
   if (!xml || !xml.trim()) {
     return {} as T;
   }
   const
-    { DOMParser } = require("xmldom"),
     parser = new DOMParser(),
     doc = parser.parseFromString(xml);
   return {
