@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import yargs from "yargs";
+import yargs, { Argv, BuilderCallback } from "yargs";
 import chalk from "chalk";
 import { NugetClient } from "./nuget-client";
-import { QueryResponse, QueryResponseDataItem } from "./interfaces";
+import { DownloadOptions, QueryResponse, QueryResponseDataItem } from "./interfaces";
 
 interface InstallOptions {
   packageId: string;
@@ -11,8 +11,8 @@ interface InstallOptions {
 }
 
 interface SearchOptions {
-  word: string;
-  words?: string[]
+  word: string,
+  words: string[]
 }
 
 interface InfoOptions {
@@ -28,7 +28,6 @@ function die(error: Error | string) {
 }
 
 function printInfo(d: QueryResponseDataItem) {
-  // console.log(d);
   console.log(`${ d.id }
     version:   ${ d.version }
     downloads: ${ d.totalDownloads }
@@ -88,7 +87,9 @@ function printQueryResults(
   }
 }
 
-const _ = yargs.command(
+yargs
+  .version(false)
+  .command(
   "download <packageId>",
   "Downloads a nuget package an unpacks it (almost like 'nuget.exe install', except there's currently no support for updating projects)",
   y => {
@@ -98,11 +99,15 @@ const _ = yargs.command(
       alias: "o",
       description: "base folder for output: packages will have their own container folders",
       default: process.cwd()
-    })
+    }).option("version", {
+      alias: "v",
+      description: "specify the version to download",
+      default: undefined
+    });
   },
-  async (args: InstallOptions) => {
+  async (args) => {
     await run(async (client) => {
-      const result = await client.downloadPackage(args);
+      const result = await client.downloadPackage(args as unknown as DownloadOptions);
       if (!result) {
         const fullName = args.version
           ? `${ args.packageId }.${ args.version }`
@@ -120,9 +125,10 @@ const _ = yargs.command(
     y.positional("query", {
       describe: "package id or partial package id to search for",
     })
-  }, async (args: SearchOptions) => {
+  }, async (args) => {
+    const options = args as unknown as SearchOptions;
     await run(async (client) => {
-      const allwords = [ args.word ].concat(args.words || []).join(" ");
+      const allwords = [ options.word ].concat(options.words).join(" ");
       const result = await client.search(allwords);
       printQueryResults(allwords, result);
     });
@@ -135,11 +141,11 @@ const _ = yargs.command(
       describe: "package id to search for"
     })
   },
-  async (args: InfoOptions) => {
+  async (args) => {
+    const options = args as unknown as InfoOptions;
     await run(async (client) => {
-      const result = await client.fetchPackageInfo(args.packageId);
-      printQueryResults(args.packageId, result);
+      const result = await client.fetchPackageInfo(options.packageId);
+      printQueryResults(options.packageId, result);
     });
   }
 ).argv;
-
