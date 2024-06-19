@@ -5,7 +5,7 @@ import * as path from "path";
 import { exec } from "child_process";
 import { createReadStream } from "fs";
 import { createHash } from "crypto";
-import { fileExists, FsEntities, ls, stat, writeTextFile } from "yafs";
+import { readFile, fileExists, FsEntities, ls, stat, writeTextFile } from "yafs";
 import { tryFindNugetConfig } from "../src/try-find-nuget-config";
 
 describe(`nuget-api`, () => {
@@ -205,7 +205,7 @@ describe(`nuget-api`, () => {
       // Arrange
       const
         sutSandbox = await Sandbox.create(),
-        verifySandbox = await Sandbox.create();
+        referenceSandbox = await Sandbox.create();
       // Act
       await Promise.all([
         downloadWithNuget(),
@@ -214,7 +214,7 @@ describe(`nuget-api`, () => {
 
       // Assert
       const [ referenceFiles, sutFiles ] = await Promise.all([
-        listFilesUnder(verifySandbox.path),
+        listFilesUnder(referenceSandbox.path),
         listFilesUnder(sutSandbox.path)
       ]);
 
@@ -231,12 +231,26 @@ describe(`nuget-api`, () => {
       for (const ref of referenceFiles) {
         const sutFile = sutFiles.find(o => o.path === ref.path);
         expect(sutFile)
+          .toBeDefined();
+        expect(sutFile)
           .toEqual(ref);
+        // verify data
+        const fullRefPath = path.join(referenceSandbox.path, ref.path);
+        expect(fullRefPath)
+          .toBeFile();
+        const expectedData = await readFile(fullRefPath);
+        const fullSutPath = path.join(sutSandbox.path, sutFile!.path);
+        expect(fullSutPath)
+          .toBeFile();
+        const resultData = await readFile(fullSutPath);
+
+        expect(resultData)
+          .toEqual(expectedData);
       }
 
       async function downloadWithNuget(): Promise<void> {
         await new Promise<void>((resolve, reject) => {
-          exec(`nuget install nunit.consolerunner -outputdirectory "${ verifySandbox.path }"`, err => {
+          exec(`nuget install nunit.consolerunner -outputdirectory "${ referenceSandbox.path }"`, err => {
             return err
               ? reject(err)
               : resolve();
