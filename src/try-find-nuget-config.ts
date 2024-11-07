@@ -83,7 +83,7 @@ function findFirstNugetConfig(search: string[]): string | undefined {
       recurse: false,
       entities: FsEntities.files,
       fullPaths: true,
-      match: /nuget.config/i
+      match: /^nuget.config$/i
     });
     if (contents.length) {
       return contents[0];

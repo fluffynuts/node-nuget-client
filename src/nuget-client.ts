@@ -38,8 +38,15 @@ interface Dictionary {
   [key: string]: any;
 }
 
+interface Map<T> {
+  [key: string]: T;
+}
+
 // nuget api has a bunch of fields with @ prefixes
 function mapAtFields(obj: Dictionary): any {
+  if (!obj) {
+    return {};
+  }
   if (typeof obj !== "object") {
     return obj;
   }
@@ -74,26 +81,50 @@ interface ResourceCacheItem {
 
 const cache: ResourceCache = {};
 
-async function cacheApiResourcesFor(registryUrl: string): Promise<ResourceCacheItem> {
-  if (cache[registryUrl]) {
-    return cache[registryUrl];
+interface Registry {
+  url: string;
+  user?: string;
+  token?: string;
+}
+
+async function cacheApiResourcesFor(registry: Registry): Promise<ResourceCacheItem> {
+  if (cache[registry.url]) {
+    return cache[registry.url];
   }
   const
-    resources = await fetchResources(registryUrl),
+    resources = await fetchResources(registry),
     searchQueryServices = resources.resources.filter(r => r._type === "SearchQueryService");
-  cache[registryUrl] = {
+  cache[registry.url] = {
     primarySearchUrl: searchQueryServices[0]._id,
     secondarySearchUrl: searchQueryServices[1]
       ? searchQueryServices[1]._id
       : null
   };
-  return cache[registryUrl];
+  return cache[registry.url];
 }
 
-async function fetchResources(registryUrl: string): Promise<NugetResources> {
-  return mapAtFields(
-    await httpGet(registryUrl)
-  );
+function makeAuthHeaderFor(registry: Registry) {
+  if (!registry.user || !registry.token) {
+    return {};
+  }
+  return {
+      Authorization: `Basic ${Buffer.from(`${ registry.user }:${ registry.token }`).toString("base64")}`
+  }
+
+}
+
+async function fetchResources(registry: Registry): Promise<NugetResources> {
+  try {
+    const
+      headers = makeAuthHeaderFor(registry),
+      httpResult = await httpGet(registry.url, undefined, headers);
+    return mapAtFields(
+      httpResult
+    );
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 }
 
 function tryResolveUrlFor(registryUrl?: string): string | undefined {
@@ -122,12 +153,36 @@ function tryResolveUrlFor(registryUrl?: string): string | undefined {
 
 
 export class NugetClient {
-  private readonly registryUrl: string;
   private readonly _loggers: LogFunction[] = [];
+  private readonly _registry: Registry;
 
-  constructor(registryUrlOrName?: string) {
-    registryUrlOrName = tryResolveUrlFor(registryUrlOrName);
-    this.registryUrl = registryUrlOrName || defaultRegistryUrl;
+  constructor(
+    registryUrlOrName?: string,
+    user?: string,
+    token?: string
+  ) {
+    const
+      resolved = tryResolveUrlFor(registryUrlOrName),
+      fallback = !!registryUrlOrName && this.isUrl(registryUrlOrName)
+        ? registryUrlOrName
+        : defaultRegistryUrl;
+    this._registry = {
+      url: resolved || fallback,
+      user: user,
+      token: token
+    };
+  }
+
+  private isUrl(str?: string): boolean {
+    if (!str) {
+      return false;
+    }
+    try {
+      const url = new URL(str);
+      return !!url;
+    } catch (e) {
+      return false;
+    }
   }
 
   public addLogger(fn: LogFunction): void {
@@ -155,16 +210,17 @@ export class NugetClient {
   }
 
   public async fetchResources(): Promise<NugetResources> {
-    this.log(`fetching resources for registry: ${ this.registryUrl }`);
-    return await fetchResources(this.registryUrl);
+    this.log(`fetching resources for registry: ${ this._registry.url }`);
+    return await fetchResources(this._registry);
   }
 
   public async query(query: string): Promise<QueryResponse> {
-    const cache = await cacheApiResourcesFor(this.registryUrl);
+    const cache = await cacheApiResourcesFor(this._registry);
     this.log(`querying: ${ query }`);
     const queryUrl = `${ cache.primarySearchUrl }?q=${ encodeURIComponent(query) }`;
+    const headers = makeAuthHeaderFor(this._registry);
     return mapAtFields(
-      await httpGet(queryUrl)
+      await httpGet(queryUrl, undefined, headers)
     ) as QueryResponse
   }
 
@@ -227,7 +283,7 @@ export class NugetClient {
         for (const filePath of filePaths) {
           const data = await zip.file(filePath)?.async("nodebuffer");
           if (!data) {
-            console.warn(`zip file claims to have entry '${filePath}' but the file was not found within the archive`);
+            console.warn(`zip file claims to have entry '${ filePath }' but the file was not found within the archive`);
             // throw rather?
             continue;
           }

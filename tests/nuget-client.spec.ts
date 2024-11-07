@@ -201,6 +201,26 @@ describe(`nuget-api`, () => {
         .toExist();
     });
 
+    describe(`using a token to connect`, () => {
+      const
+        repo = "https://nuget.pkg.github.com/codeo-za/index.json",
+        user = process.env.GIT_USER,
+        token = process.env.GIT_TOKEN;
+      if (!!user && !!token) {
+        it(`should fetch package info`, async () => {
+          // Arrange
+          const client = new NugetClient(repo, user, token);
+          // Act
+          const result = await client.fetchPackageInfo("codeo.core");
+          // Assert
+          expect(result)
+            .toBeDefined();
+          expect(result.data)
+            .toBeDefined();
+        });
+      }
+    });
+
     it(`should download the exact same stuff as nuget.exe does`, async () => {
       // Arrange
       const
@@ -247,6 +267,7 @@ describe(`nuget-api`, () => {
         expect(resultData)
           .toEqual(expectedData);
       }
+
 
       async function downloadWithNuget(): Promise<void> {
         await new Promise<void>((resolve, reject) => {
